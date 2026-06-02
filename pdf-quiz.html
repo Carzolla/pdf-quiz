@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --border-hover: #444;
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #7c6af7;
+    --accent-dim: #2a2545;
+    --green: #3ecf8e;
+    --green-dim: #0d2e1f;
+    --red: #f56565;
+    --red-dim: #2d1010;
+    --yellow: #f6c94e;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .container { width: 100%; max-width: 640px; }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; }
+  .logo span { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  /* API KEY */
+  .api-row {
+    display: flex; gap: 8px;
+  }
+  .api-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--accent); }
+  .api-input::placeholder { color: var(--text-dim); }
+
+  .btn-sm {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text-muted);
+    font-size: 13px; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--border-hover); color: var(--text); }
+
+  /* UPLOAD */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px; padding: 2rem 1rem; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(124,106,247,0.05); }
+  .upload-zone.has-file { border-color: var(--green); border-style: solid; background: var(--green-dim); }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-title { font-weight: 500; font-size: 15px; }
+  .upload-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* SLIDERS */
+  .slider-row { margin-bottom: 1.25rem; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .slider-label { font-size: 14px; color: var(--text-muted); }
+  .slider-val {
+    font-size: 20px; font-weight: 600; color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .slider-unit { font-size: 13px; color: var(--text-dim); font-weight: 400; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* MAIN BUTTON */
+  .btn-primary {
+    width: 100%; padding: 15px; border-radius: 10px;
+    background: var(--accent); border: none; color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: -0.2px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; margin-top: 0.75rem;
+  }
+  .btn-secondary:hover { border-color: var(--border-hover); color: var(--text); }
+
+  /* LOADING */
+  #screen-loading { text-align: center; padding: 4rem 1rem; }
+  .spinner {
+    display: inline-flex; gap: 7px; margin-bottom: 1.5rem;
+  }
+  .spinner span {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .spinner span:nth-child(2) { animation-delay: 0.2s; background: var(--text-muted); }
+  .spinner span:nth-child(3) { animation-delay: 0.4s; background: var(--text-dim); }
+  @keyframes pulse { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .loading-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .loading-sub { font-size: 14px; color: var(--text-muted); }
+
+  /* QUIZ */
+  .quiz-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem;
+  }
+  .q-counter { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  .timer {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 8px;
+  }
+  .timer.urgent { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+  .timer-icon { font-size: 15px; }
+
+  .progress-bar {
+    height: 3px; background: var(--border); border-radius: 2px;
+    margin-bottom: 1.75rem; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .q-text {
+    font-size: 17px; font-weight: 500; line-height: 1.55;
+    margin-bottom: 1.25rem; color: var(--text);
+  }
+
+  .opt {
+    display: block; width: 100%; text-align: left;
+    padding: 13px 16px; margin-bottom: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--text); transition: all 0.15s;
+    position: relative;
+  }
+  .opt:hover { border-color: var(--border-hover); background: var(--surface2); }
+  .opt.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .opt.correct { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+  .opt.wrong { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+  .opt:disabled { pointer-events: none; }
+  .opt-label {
+    display: inline-block; width: 22px; height: 22px; border-radius: 6px;
+    background: var(--surface2); font-size: 11px; font-weight: 700;
+    text-align: center; line-height: 22px; margin-right: 10px;
+    vertical-align: middle; transition: background 0.15s;
+  }
+
+  /* RESULTS */
+  .score-ring-wrap { text-align: center; padding: 1.5rem; }
+  .score-big { font-size: 52px; font-weight: 600; letter-spacing: -2px; }
+  .score-pct { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin: 1.25rem 0;
+  }
+  .stat-card {
+    background: var(--surface2); border-radius: 10px;
+    padding: 1rem; text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: 600; }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .result-item {
+    background: var(--surface); border-radius: 10px;
+    padding: 1rem 1.25rem; margin-bottom: 8px;
+    border-left: 3px solid transparent;
+  }
+  .result-item.ok { border-left-color: var(--green); }
+  .result-item.fail { border-left-color: var(--red); }
+  .result-q { font-size: 14px; font-weight: 500; margin-bottom: 6px; line-height: 1.45; }
+  .result-line { font-size: 13px; margin-top: 3px; }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .badge-ok { background: var(--green-dim); color: var(--green); }
+  .badge-fail { background: var(--red-dim); color: var(--red); }
+
+  .hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; }
+  a.hint-link { color: var(--accent); text-decoration: none; }
+  a.hint-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="logo">
+    <div class="logo-icon">📄</div>
+    <div>
+      <h1>PDF Quiz</h1>
+      <span>PDF'den otomatik sınav oluştur</span>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen active">
+
+    <div class="card">
+      <div class="section-label">🔑 Anthropic API Key</div>
+      <div class="api-row">
+        <input class="api-input" type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off">
+        <button class="btn-sm" onclick="toggleKey()">Göster</button>
+      </div>
+      <p class="hint" style="text-align:left; margin-top:8px;">
+        API key yok mu? <a class="hint-link" href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>'dan ücretsiz al
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">📎 PDF Dosyası</div>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pdf-input').click()">
+        <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handleFile(this)">
+        <div class="upload-icon">⬆️</div>
+        <div class="upload-title" id="upload-label">PDF'i seçmek için tıkla</div>
+        <div class="upload-sub" id="upload-sub">veya sürükle & bırak</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">⚙️ Test Ayarları</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Soru sayısı</span>
+          <span class="slider-val"><span id="q-count-out">10</span> <span class="slider-unit">soru</span></span>
+        </div>
+        <input type="range" min="3" max="100" value="10" step="1" id="q-count"
+          oninput="document.getElementById('q-count-out').textContent=this.value">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Test süresi</span>
+          <span class="slider-val"><span id="q-time-out">5</span> <span class="slider-unit">dakika</span></span>
+        </div>
+        <input type="range" min="1" max="60" value="5" step="1" id="q-time"
+          oninput="document.getElementById('q-time-out').textContent=this.value">
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startQuiz()">Testi Başlat →</button>
+    <p class="hint" style="margin-top:10px;">API key'in bu sayfadan çıkmaz — sadece tarayıcında kullanılır</p>
+  </div>
+
+  <!-- LOADING -->
+  <div id="screen-loading" class="screen">
+    <div class="spinner"><span></span><span></span><span></span></div>
+    <div class="loading-title" id="loading-msg">PDF okunuyor...</div>
+    <div class="loading-sub" id="loading-sub">Sorular hazırlanıyor, biraz bekle</div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <span class="q-counter" id="q-progress-label">Soru 1 / 5</span>
+      <div class="timer" id="timer-badge">
+        <span class="timer-icon">⏱</span>
+        <span id="timer-display">5:00</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <p class="q-text" id="q-text"></p>
+    <div id="options-container"></div>
+    <button class="btn-primary" onclick="nextQuestion()" id="next-btn" style="display:none; margin-top:1rem;">
+      Sonraki Soru →
+    </button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <div class="card score-ring-wrap">
+      <div class="score-big" id="score-big">—</div>
+      <div class="score-pct" id="score-pct">—</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-lbl">Toplam</div>
+        </div>
+        <div class="stat-card" style="border-bottom:2px solid var(--green)">
+          <div class="stat-num" style="color:var(--green)" id="stat-correct">0</div>
+          <div class="stat-lbl">Doğru</div>
+        </div>
+        <div class="stat-card" style="border-bottom:2px solid var(--red)">
+          <div class="stat-num" style="color:var(--red)" id="stat-wrong">0</div>
+          <div class="stat-lbl">Yanlış</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="results-list"></div>
+
+    <button class="btn-primary" onclick="resetQuiz()" style="margin-top:1rem;">Yeni Test Başlat →</button>
+    <button class="btn-secondary" onclick="retryQuiz()">Aynı PDF ile Tekrar Dene</button>
+  </div>
+
+</div>
+
+<script>
+  let pdfBase64 = null;
+  let pdfFileName = '';
+  let questions = [];
+  let answers = [];
+  let currentQ = 0;
+  let timerInterval = null;
+  let secondsLeft = 300;
+  let totalSeconds = 300;
+
+  function toggleKey() {
+    const inp = document.getElementById('api-key');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    pdfFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      pdfBase64 = e.target.result.split(',')[1];
+      const zone = document.getElementById('upload-zone');
+      zone.classList.add('has-file');
+      document.getElementById('upload-label').textContent = '✓ ' + file.name;
+      document.getElementById('upload-sub').textContent = (file.size / 1024).toFixed(0) + ' KB · PDF hazır';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // drag & drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = '#7c6af7'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      document.getElementById('pdf-input').files = e.dataTransfer.files;
+      handleFile({ files: e.dataTransfer.files });
+    }
+  });
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  async function startQuiz() {
+    const apiKey = document.getElementById('api-key').value.trim();
+    if (!apiKey) { alert('Lütfen API key gir.'); return; }
+    if (!pdfBase64) { alert('Lütfen bir PDF yükle.'); return; }
+
+    const qCount = parseInt(document.getElementById('q-count').value);
+    const qTime = parseInt(document.getElementById('q-time').value);
+
+    showScreen('loading');
+
+    const msgs = [
+      ['PDF analiz ediliyor...', 'İçerik taranıyor'],
+      ['Sorular oluşturuluyor...', 'AI çalışıyor, ' + qCount + ' soru hazırlanıyor'],
+      ['Son rötuşlar...', 'Neredeyse hazır']
+    ];
+    let mi = 0;
+    const msgInt = setInterval(() => {
+      mi = Math.min(mi + 1, msgs.length - 1);
+      document.getElementById('loading-msg').textContent = msgs[mi][0];
+      document.getElementById('loading-sub').textContent = msgs[mi][1];
+    }, 3000);
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          system: `Sen bir sınav hazırlayan asistansın. Kullanıcının gönderdiği PDF içeriğine dayanarak tam olarak ${qCount} adet çoktan seçmeli soru hazırla. Her sorunun 4 şıkkı olsun (A, B, C, D). Yalnızca geçerli JSON döndür, başka hiçbir şey yazma, açıklama da yapma. Format kesinlikle şu şekilde olsun:
+{"questions":[{"question":"soru metni","options":["A şıkkı","B şıkkı","C şıkkı","D şıkkı"],"correct":0}]}
+correct alanı doğru cevabın 0-3 arası index'i. Sorular PDF içeriğiyle birebir ilgili olsun, test edici ve öğretici olsun.`,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 } },
+              { type: 'text', text: `Bu PDF'den ${qCount} adet çoktan seçmeli soru hazırla. Yalnızca JSON döndür.` }
+            ]
+          }]
+        })
+      });
+
+      clearInterval(msgInt);
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = err?.error?.message || 'HTTP ' + res.status;
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      const text = data.content.map(b => b.text || '').join('');
+      const clean = text.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, s => s.replace(/```json?|```/g, '')).trim();
+      const parsed = JSON.parse(clean);
+      questions = parsed.questions;
+
+      answers = new Array(questions.length).fill(null);
+      currentQ = 0;
+      secondsLeft = qTime * 60;
+      totalSeconds = secondsLeft;
+
+      showScreen('quiz');
+      renderQuestion();
+      startTimer();
+
+    } catch (err) {
+      clearInterval(msgInt);
+      showScreen('setup');
+      alert('Hata: ' + err.message + '\n\nAPI key\'in doğru mu? Hesabında kredi var mı?');
+    }
+  }
+
+  function renderQuestion() {
+    const q = questions[currentQ];
+    const total = questions.length;
+    const labels = ['A', 'B', 'C', 'D'];
+
+    document.getElementById('q-progress-label').textContent = `Soru ${currentQ + 1} / ${total}`;
+    document.getElementById('progress-fill').style.width = ((currentQ / total) * 100) + '%';
+    document.getElementById('q-text').textContent = (currentQ + 1) + '. ' + q.question;
+    document.getElementById('next-btn').style.display = 'none';
+
+    const container = document.getElementById('options-container');
+    container.innerHTML = q.options.map((opt, i) =>
+      `<button class="opt" onclick="selectAnswer(${i})">
+        <span class="opt-label">${labels[i]}</span>${opt}
+      </button>`
+    ).join('');
+  }
+
+  function selectAnswer(idx) {
+    if (answers[currentQ] !== null) return;
+    answers[currentQ] = idx;
+    const q = questions[currentQ];
+    const btns = document.querySelectorAll('.opt');
+
+    btns.forEach((b, i) => {
+      b.disabled = true;
+      if (i === q.correct) b.classList.add('correct');
+      else if (i === idx) b.classList.add('wrong');
+    });
+
+    const isLast = currentQ === questions.length - 1;
+    const btn = document.getElementById('next-btn');
+    btn.style.display = 'block';
+    btn.textContent = isLast ? 'Sonuçları Gör →' : 'Sonraki Soru →';
+  }
+
+  function nextQuestion() {
+    if (currentQ < questions.length - 1) {
+      currentQ++;
+      renderQuestion();
+    } else {
+      finishQuiz();
+    }
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      secondsLeft--;
+      updateTimerDisplay();
+      if (secondsLeft <= 0) { clearInterval(timerInterval); finishQuiz(); }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2, '0');
+    const badge = document.getElementById('timer-badge');
+    if (secondsLeft <= 30) badge.classList.add('urgent');
+    else badge.classList.remove('urgent');
+  }
+
+  function finishQuiz() {
+    clearInterval(timerInterval);
+    const total = questions.length;
+    let correct = 0;
+    const labels = ['A', 'B', 'C', 'D'];
+
+    const list = document.getElementById('results-list');
+    list.innerHTML = '';
+
+    questions.forEach((q, i) => {
+      const userAns = answers[i];
+      const isOk = userAns === q.correct;
+      if (isOk) correct++;
+
+      const div = document.createElement('div');
+      div.className = 'result-item ' + (isOk ? 'ok' : 'fail');
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <p class="result-q">${i + 1}. ${q.question}</p>
+          <span class="badge ${isOk ? 'badge-ok' : 'badge-fail'}">${isOk ? 'Doğru' : 'Yanlış'}</span>
+        </div>
+        ${!isOk ? `<p class="result-line" style="color:var(--red)">Senin cevabın: ${userAns !== null ? labels[userAns] + ') ' + q.options[userAns] : '— (cevap verilmedi)'}</p>` : ''}
+        <p class="result-line" style="color:var(--green)">Doğru cevap: ${labels[q.correct]}) ${q.options[q.correct]}</p>
+      `;
+      list.appendChild(div);
+    });
+
+    const wrong = total - correct;
+    const pct = Math.round((correct / total) * 100);
+
+    document.getElementById('score-big').textContent = pct + '%';
+    document.getElementById('score-pct').textContent = correct + ' doğru, ' + wrong + ' yanlış · ' + total + ' soru';
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-correct').textContent = correct;
+    document.getElementById('stat-wrong').textContent = wrong;
+
+    showScreen('results');
+  }
+
+  function resetQuiz() {
+    pdfBase64 = null;
+    pdfFileName = '';
+    questions = [];
+    answers = [];
+    clearInterval(timerInterval);
+    document.getElementById('upload-zone').classList.remove('has-file');
+    document.getElementById('upload-label').textContent = "PDF'i seçmek için tıkla";
+    document.getElementById('upload-sub').textContent = 'veya sürükle & bırak';
+    document.getElementById('pdf-input').value = '';
+    showScreen('setup');
+  }
+
+  function retryQuiz() {
+    questions = [];
+    answers = [];
+    clearInterval(timerInterval);
+    showScreen('setup');
+  }
+</script>
+</body>
+</html>
